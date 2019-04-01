@@ -67,6 +67,9 @@ var raiseRequest = (params) => {
             return db.getReceiver(params.to.toLowerCase())
         })
         .then((receiver) => {
+            console.log(sender)
+            console.log(params.requests)
+            console.log(receiver)
             return sendMail(sender, params.requests, receiver)
         })
         .then((result) => {

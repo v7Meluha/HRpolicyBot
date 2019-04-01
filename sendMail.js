@@ -25,7 +25,7 @@ const {
     return new Promise((resolve, reject) => {
     if (info.messageId != null) {
       console.log("success")
-        resolve("And..Done! The mail has been sent 😊👍. You're under copy and you'll be receiving a response very soon")
+        resolve("And..Done! The mail has been sent👍. You're under copy and you'll be receiving a response very soon")
     } else {
       console.log("error")
         reject(err)
