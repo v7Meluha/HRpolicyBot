@@ -3,6 +3,7 @@ const express = require('express')
 const app = express();
 var bodyParser = require('body-parser');
 var Bot = require('./getResponse');
+const PORT = process.env.PORT||'7000';
 
 app.use(bodyParser.json());
 app.use(express.json());
@@ -23,6 +24,6 @@ app.post("/", (req, res) => {
             res.json("Oops..couldn't find anything for that. Try a mroe specific query")
         })
 })
-app.listen(process.env.PORT || 4000, function(){
+app.listen(PORT, function(){
     console.log('Your node js server is running');
 });

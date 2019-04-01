@@ -4,7 +4,7 @@
   "description": "An app that answers questions on HR Policies",
   "main": "index.js",
   "scripts": {
-    "test": "node index"
+    "start": "node index.js"
   },
   "author": "varsha",
   "license": "ISC",
