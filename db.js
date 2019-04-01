@@ -1,7 +1,8 @@
 const mysql = require("mysql");
 const moment = require("moment");
-const { getDateString } = require("./lib")
-//const { getGrades } = require("./lib");
+const {
+getEventTime
+ } = require("./lib")
 
 class DB {
   constructor() {
@@ -19,10 +20,62 @@ class DB {
     return Promise.resolve(connection);
   }
 
-  getSalary(params) {
-    params.ID = '14-0584439'
-     var sql = "SELECT * FROM `employee_details` WHERE eID = ?",
+    getReceiver(employer) {
+     var sql = `SELECT name, email FROM employee_details WHERE LOWER(jobTitle) LIKE '%${employer}%' LIMIT 1`,
         message = '';
+    return this.connect()
+      .then(con => {
+        return new Promise((resolve, reject) => {
+          con.query(sql, function(
+            err,
+            result
+          ) {
+            if (err) {
+              reject(err);
+            } 
+            else {
+            resolve(result[0]);
+          }
+          });
+        });
+      })
+      .then(response => {
+        console.log(response.name, response.email);
+        return response;
+      });
+  }
+
+  getSender(params) {
+            params.ID = 703
+     var sql = `SELECT name, email,jobTitle FROM employee_details WHERE eID = ${params.ID}`,
+        message = '';
+    return this.connect()
+      .then(con => {
+        return new Promise((resolve, reject) => {
+          con.query(sql, function(
+            err,
+            result
+          ) {
+            if (err) {
+              reject(err);
+            } 
+            else {
+            resolve(result[0]);
+          }
+          });
+        });
+      })
+      .then(response => {
+        console.log(response.jobTitle);
+        return response;
+      });
+  }
+
+
+  getSalary(params) {
+      params.ID = 703
+     var sql = "SELECT * FROM `employee_details` WHERE eID = ?",
+      message = '';
     return this.connect()
       .then(con => {
         return new Promise((resolve, reject) => {
@@ -34,7 +87,6 @@ class DB {
               reject(err);
             } else {
               message = `Your salary breakdown is as follows:\n${result[0].salary}`;
-              console.log(message);
             }
             resolve(message);
           });
@@ -47,8 +99,6 @@ class DB {
   }
 
   getBenefits(params) {
-    console.log(params)
-    params.ID = '098986'
      var sql = "SELECT * FROM `employee_details` WHERE eID = ?",
         message = '';
     return this.connect()
@@ -62,7 +112,6 @@ class DB {
               reject(err);
             } else {
               message = `You have the following benefits:\n${result[0].benefits}`;
-              console.log(message);
             }
             resolve(message);
           });
@@ -75,24 +124,19 @@ class DB {
   }
 
   getContacts(params) {
-    console.log(params)
-    if(params.person.toLowerCase() == 'hr' ){
-      params.person = 'Marketing Assistant'
-    }
-     var sql = 'SELECT * FROM `employee_details` WHERE jobTitle = ?',
+     var sql = `SELECT * FROM employee_details WHERE LOWER(jobTitle) LIKE '%${params.jobTitle}%'`,
      message = '';
-     console.log(sql)
     return this.connect()
       .then(con => {
         return new Promise((resolve, reject) => {
-          con.query(sql, params.person, function(
+          con.query(sql,function(
             err,
             result
           ) {
             if (err) {
               reject(err);
             } else {
-              message = `Contact Details\n Email: ${result[0].email}\n Phone: ${result[0].phone}`;
+              message = `Here is the contact \nEmail: ${result[0].email}\nPhone: ${result[0].phone}`;
             }
             resolve(message);
           });
@@ -105,16 +149,16 @@ class DB {
 
   }
 
-  getEvent(params) {
-    console.log("params")
-    var dateToday = new Date();
-    dateToday = moment(dateToday).format('YYYY-MM-DD')
-     var sql,message = '';
-       if(params.category == 'event'){
-         sql = `SELECT * FROM events WHERE date >= '%${dateToday}'`
+getEvent(params) {
+
+    var dateToday = moment().local().format(),
+    sql,
+    message = '';
+       if(params.eventTitle == 'event'){
+         sql = `SELECT * FROM events WHERE startDate >= '${dateToday}' ORDER BY startDate ASC`
        }
        else{
-        sql = `SELECT * FROM events WHERE LOWER(eventTitle) LIKE '%${params.category}%' && date >= '%${dateToday}'`
+        sql = `SELECT * FROM events WHERE LOWER(eventTitle) LIKE '%${params.eventTitle}%' && startDate >= '%${dateToday}' ORDER BY startDate ASC`
       }
     return this.connect()
       .then(con => {
@@ -126,8 +170,37 @@ class DB {
             if (err) {
               reject(err);
             } else {
-              var eventDate = getDateString(result[0].date)
-              message = `The next ${result[0].eventTitle} is on ${eventDate} at:\n${result[0].venue}`;
+              var event = getEventTime(result[0].startDate, result[0].endDate)
+              if(event.endDate === ''){
+                message = `The ${result[0].eventTitle} is on *${event.startDate}*, at \n${result[0].venue}`
+              }
+              else{
+              message = `The ${result[0].eventTitle} is from *${event.startDate}*,\ntill *${event.endDate}*.\nVenue Details:${result[0].venue}\n`;
+              }
+              message +=`\n${result[0].description}`
+              console.log(message);
+            }
+            resolve(message);
+          });
+        });
+      })
+  }
+
+    getLeave(params) {
+    params.ID = 703
+    var total = 18, sql , message = ''
+        sql = `SELECT leavestaken, ${total} - leavestaken AS leavesLeft, name FROM employee_details WHERE eID = ${params.ID}`
+    return this.connect()
+      .then(con => {
+        return new Promise((resolve, reject) => {
+          con.query(sql,function(
+            err,
+            result
+          ) {
+            if (err) {
+              reject(err);
+            } else {
+              message = `So you've got ${result[0].leavesLeft} days of leave left, ${result[0].name}. Keep a check, as you get a max of ${total} days.`;
               console.log(message);
             }
             resolve(message);
@@ -135,7 +208,6 @@ class DB {
         });
       })
       .then(response => {
-        console.log(response);
         return response;
       });
   }
@@ -143,3 +215,4 @@ class DB {
 }
 
 module.exports = DB;
+

@@ -5,67 +5,85 @@ const sendMail = require("./sendMail")
 const { getDocsUrl } = require("./lib.js")
 
 var doAction = (action, params) => {
-    switch(action){
+    switch (action) {
         case "simpleQuery":
-        return getDetails(params)
-        break;
-        case "getContact":
-        return getContact(params)
-        break;
-        case "docs":
-        return getDocuments(params)
-        break;
+            return getDetails(params[0].parameters)
+            break;
         case "request":
-        return raiseRequest(params[1].parameters)
-        break;
+            return raiseRequest(params[0].parameters)
+            break;
+        case "getEvent":
+            return getEvent(params[0].parameters)
+            break;
+        case "getContact":
+            return getContact(params)
+            break;
+        case "docs":
+            return getDocuments(params)
+            break;
         default:
-        return null
-        break;
+            return null
+            break;
     }
 }
 exports.doAction = doAction
 
 var getDetails = (params) => {
-    switch(params.category.toLowerCase()){
+    params.ID = 703
+    switch (params.category.toLowerCase()) {
         case 'benefits':
             return db.getBenefits(params)
-        break;
+            break;
         case 'leave':
+        case 'leaves':
             return db.getLeave(params)
-        break;
+            break;
         case 'pay':
             return db.getSalary(params)
-        break;
-        case 'ahm':
-        case 'performance':
-        case 'event':
-        console.log("HI")
-            return db.getEvent(params)
-        break;
+            break;
         default:
-        break;
+            break;
     }
 }
 
 var getContact = (params) => {
     return db.getContacts(params)
-    .then((result) => {
+        .then((result) => {
             return Promise.resolve(result)
-    })
+        })
 
 }
 
 var getDocuments = (params) => {
-    console.log("in")
-    var url =  getDocsUrl(params)
-            return Promise.resolve(url)
-    
+    return Promise.resolve(getDocsUrl(params))
 }
 
 var raiseRequest = (params) => {
-    return sendMail(params)
-    .then((result) => {
+    var sender = {}
+    params.ID = 703
+    return db.getSender(params)
+        .then((user) => {
+            Object.assign(sender, user)
+            return db.getReceiver(params.to.toLowerCase())
+        })
+        .then((receiver) => {
+            return sendMail(sender, params.requests, receiver)
+        })
+        .then((result) => {
             return Promise.resolve(result)
-    })
+        })
 }
 
+var getEvent = (params) => {
+    params.eventTitle = params.eventTitle.toLowerCase()
+    if (params.eventTitle == 'ahm' || params.eventTitle == 'performance review meet' || params.eventTitle == 'event') {
+        return db.getEvent(params);
+    } else
+        throw new Error("INV_EVENT")
+            .then((eventDetails) => {
+                return Promise.resolve(eventDetails);
+            })
+            .catch((err) => {
+                return Promise.resolve("Oops..I could'nt find any such event 🤔. If you're looking for the next AHM for example, type in 'Next AHM'")
+            })
+}
